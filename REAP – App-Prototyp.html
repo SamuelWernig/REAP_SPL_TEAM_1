@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>REAP – Prototyp</title>
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--tx:#231f1b;--mut:#7a726a;--ac:#d9531e;--acx:#fff;--bd:#e6e0d8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171513;--card:#232019;--tx:#f2ede6;--mut:#a39a8f;--bd:#37322b}}
+:root[data-theme="dark"]{--bg:#171513;--card:#232019;--tx:#f2ede6;--mut:#a39a8f;--bd:#37322b}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:16px}
+#app{width:100%;max-width:400px;min-height:640px;background:var(--bg);border:1px solid var(--bd);border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+header{padding:16px 20px;display:flex;align-items:center;gap:10px;font-weight:700;background:var(--card);border-bottom:1px solid var(--bd)}
+header button{background:none;border:0;font-size:20px;color:var(--tx);cursor:pointer;padding:0}
+header .logo{color:var(--ac);letter-spacing:2px}
+main{padding:20px;flex:1}
+h2{margin:0 0 4px;font-size:22px}
+p.s{color:var(--mut);margin:0 0 16px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px}
+.card.click{cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:14px;background:var(--ac);color:var(--acx);font-size:16px;font-weight:600;cursor:pointer;margin-top:14px}
+.btn.o{background:none;color:var(--ac);border:1.5px solid var(--ac)}
+input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font-size:15px;margin-bottom:10px}
+label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{padding:8px 14px;border:1px solid var(--bd);border-radius:20px;background:var(--card);cursor:pointer;font-size:14px}
+.chip.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.tag{font-size:12px;color:var(--mut)}
+.qty button{width:30px;height:30px;border-radius:50%;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:16px;cursor:pointer}
+.qty{display:flex;align-items:center;gap:10px}
+.emoji{font-size:30px}
+.tabs{display:flex;background:var(--card);border-top:1px solid var(--bd)}
+.tabs div{flex:1;text-align:center;padding:12px 0;font-size:12px;color:var(--mut);cursor:pointer}
+.tabs div.on{color:var(--ac);font-weight:700}
+.qr{display:flex;justify-content:center;margin:16px 0}
+.qr svg{background:#fff;padding:10px;border-radius:12px;width:200px;height:200px}
+.hide{display:none}
+.big{font-size:20px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <header><button id="back" class="hide" onclick="back()">←</button><span class="logo">REAP</span><span id="ttl" style="margin-left:auto;font-weight:500;color:var(--mut);font-size:14px"></span></header>
+  <main id="m"></main>
+  <nav class="tabs hide" id="tabs">
+    <div data-t="home" onclick="go('home')">🏠<br>Start</div>
+    <div data-t="res" onclick="go('res')">📅<br>Reservierung</div>
+    <div data-t="owner" onclick="go('owner')">🏪<br>Besitzer</div>
+  </nav>
+</div>
+<script>
+const R=[
+ {id:1,n:"Gasthaus Zum Adler",k:"Steirisch",e:"🥨",r:"4.7",o:"11:00–22:00",p:40},
+ {id:2,n:"Trattoria Roma",k:"Italienisch",e:"🍕",r:"4.5",o:"12:00–23:00",p:30},
+ {id:3,n:"Sushi Zen",k:"Japanisch",e:"🍣",r:"4.8",o:"17:00–23:00",p:24}
+];
+const MENU={
+ 1:[["Wiener Schnitzel",14.9,"🍖"],["Kürbiscremesuppe",6.5,"🍲"],["Apfelstrudel",5.9,"🥧"]],
+ 2:[["Pizza Margherita",9.5,"🍕"],["Spaghetti Carbonara",11.9,"🍝"],["Tiramisu",6.0,"🍰"]],
+ 3:[["Sushi Mix (12 Stk.)",16.5,"🍣"],["Miso-Suppe",4.5,"🍜"],["Mochi",5.0,"🍡"]]
+};
+let S={screen:"login",hist:[],rest:null,date:"",time:"19:00",ppl:2,order:{},pay:"Karte",tip:0,cancelled:false};
+const $=s=>document.querySelector(s);
+const eur=n=>n.toFixed(2).replace(".",",")+" €";
+const total=()=>Object.entries(S.order).reduce((a,[i,q])=>a+MENU[S.rest.id][i][1]*q,0);
+function go(s,push=true){if(push&&S.screen!==s)S.hist.push(S.screen);S.screen=s;render()}
+function back(){S.screen=S.hist.pop()||"home";render()}
+function pick(k,v){S[k]=v;render()}
+function render(){
+  const s=S.screen,auth=s==="login";
+  $("#back").classList.toggle("hide",auth||s==="home");
+  $("#tabs").classList.toggle("hide",auth);
+  document.querySelectorAll("#tabs div").forEach(d=>d.classList.toggle("on",d.dataset.t===(s==="owner"?"owner":s==="home"?"home":"res")));
+  $("#m").innerHTML=V[s]();
+  $("#ttl").textContent=S.rest&&!["home","login","owner"].includes(s)?S.rest.n:"";
+}
+const V={
+login:()=>`<h2>Willkommen 👋</h2><p class="s">Melde dich an oder registriere dich.</p>
+ <label>E-Mail</label><input value="max@beispiel.at"><label>Passwort</label><input type="password" value="12345678">
+ <button class="btn" onclick="go('home',false)">Einloggen als Kunde</button>
+ <button class="btn o" onclick="go('owner',false)">Als Restaurantbesitzer einloggen</button>
+ <button class="btn o" onclick="alert('Registrierung (Demo)')">Neu registrieren</button>`,
+home:()=>`<h2>Restaurant wählen</h2><p class="s">Reserviere einen Tisch und bestelle vor.</p>
+ <input placeholder="🔍 Restaurant suchen">`+R.map(r=>`<div class="card click" onclick="S.rest=R[${r.id-1}];S.order={};S.cancelled=false;go('book')">
+ <div class="row"><div class="emoji">${r.e}</div><div style="flex:1"><b>${r.n}</b><div class="tag">${r.k} · ⭐ ${r.r}</div><div class="tag">Geöffnet ${r.o}</div></div>›</div></div>`).join(""),
+book:()=>`<h2>Tisch reservieren</h2><p class="s">Datum, Uhrzeit und Personen wählen.</p>
+ <label>Datum</label><input type="date" value="${S.date}" onchange="S.date=this.value">
+ <label>Uhrzeit</label><div class="chips">${["17:30","18:00","19:00","19:30","20:00","21:00"].map(t=>`<div class="chip ${S.time===t?'on':''}" onclick="pick('time','${t}')">${t}</div>`).join("")}</div>
+ <label>Personen</label><div class="qty card row"><span>Anzahl</span><span class="qty"><button onclick="S.ppl=Math.max(1,S.ppl-1);render()">−</button><b>${S.ppl}</b><button onclick="S.ppl=Math.min(12,S.ppl+1);render()">+</button></span></div>
+ <button class="btn" onclick="go('menu')">Weiter zur Speisekarte</button>
+ <button class="btn o" onclick="alert('Anruf / Chat (Demo)')">📞 Restaurant kontaktieren</button>`,
+menu:()=>`<h2>Speisekarte</h2><p class="s">Optional vorbestellen.</p>`+MENU[S.rest.id].map((m,i)=>`<div class="card row"><span class="emoji">${m[2]}</span><div style="flex:1"><b>${m[0]}</b><div class="tag">${eur(m[1])}</div></div>
+ <span class="qty"><button onclick="S.order[${i}]=Math.max(0,(S.order[${i}]||0)-1);render()">−</button><b>${S.order[i]||0}</b><button onclick="S.order[${i}]=(S.order[${i}]||0)+1;render()">+</button></span></div>`).join("")+
+ `<div class="row big" style="margin-top:8px"><span>Summe</span><span>${eur(total())}</span></div><button class="btn" onclick="go('pay')">Weiter zur Bezahlung</button>`,
+pay:()=>`<h2>Bezahlung</h2><p class="s">Zahlungsart wählen und optional Trinkgeld geben.</p>
+ <label>Zahlungsart</label><div class="chips">${["Karte","PayPal","Apple Pay","Vor Ort"].map(p=>`<div class="chip ${S.pay===p?'on':''}" onclick="pick('pay','${p}')">${p}</div>`).join("")}</div>
+ <label>Trinkgeld</label><div class="chips">${[0,1,2,5].map(t=>`<div class="chip ${S.tip===t?'on':''}" onclick="pick('tip',${t})">${t?t+' €':'Kein'}</div>`).join("")}</div>
+ <div class="card"><div class="row"><span>Essen</span><span>${eur(total())}</span></div><div class="row"><span>Trinkgeld</span><span>${eur(S.tip)}</span></div><hr style="border:0;border-top:1px solid var(--bd)"><div class="row big"><span>Gesamt</span><span>${eur(total()+S.tip)}</span></div></div>
+ <button class="btn" onclick="S.cancelled=false;go('res')">Reservierung bestätigen</button>`,
+res:()=>{
+ if(!S.rest)return `<h2>Reservierung</h2><p class="s">Noch keine Reservierung. Wähle ein Restaurant auf der Startseite.</p><button class="btn" onclick="go('home')">Restaurant wählen</button>`;
+ if(S.cancelled)return `<h2>Storniert</h2><p class="s">Deine Reservierung wurde storniert. Der Platz ist wieder frei.</p><button class="btn" onclick="go('home')">Neue Reservierung</button>`;
+ return `<h2>Deine Reservierung ✅</h2><p class="s">Zeige den QR-Code im Restaurant vor.</p>
+ <div class="card"><b>${S.rest.n}</b><div class="tag">📅 ${S.date||"Heute"} · 🕒 ${S.time} · 👥 ${S.ppl} Personen</div><div class="tag">💳 ${S.pay} · Vorbestellung: ${eur(total())}</div></div>
+ <div class="qr">${qr()}</div>
+ <button class="btn o" onclick="alert('Bewertung: ⭐⭐⭐⭐⭐ (Demo)')">⭐ Restaurant bewerten</button>
+ <button class="btn o" onclick="if(confirm('Reservierung stornieren?')){S.cancelled=true;render()}">Reservierung stornieren</button>`},
+owner:()=>`<h2>Mein Restaurant 🏪</h2><p class="s">Verwaltung für Restaurantbesitzer.</p>
+ <label>Restaurantname</label><input value="Gasthaus Zum Adler">
+ <label>Anzahl Plätze</label><input type="number" value="40">
+ <label>Öffnungszeiten</label><div class="row"><input value="11:00"><input value="22:00"></div>
+ <label>Verfügbarkeit heute</label><div class="chips"><div class="chip on">18:00</div><div class="chip on">19:00</div><div class="chip">20:00</div><div class="chip on">21:00</div></div>
+ <label>Speisekarte</label>`+MENU[1].map(m=>`<div class="card row"><span>${m[2]} ${m[0]}</span><b>${eur(m[1])}</b></div>`).join("")+
+ `<button class="btn" onclick="alert('Gespeichert (Demo)')">Speichern</button><button class="btn o" onclick="go('login',false)">Ausloggen</button>`
+};
+function qr(){let n=21,c="",seed=S.rest.id*7+S.ppl;
+ const f=(x,y)=>[[0,0],[n-7,0],[0,n-7]].some(([a,b])=>x>=a&&x<a+7&&y>=b&&y<b+7);
+ const fd=(x,y)=>{for(const[a,b]of[[0,0],[n-7,0],[0,n-7]])if(x>=a&&x<a+7&&y>=b&&y<b+7){const i=x-a,j=y-b;return i==0||i==6||j==0||j==6||(i>1&&i<5&&j>1&&j<5)}return 0};
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){seed=(seed*1103515245+12345)&0x7fffffff;const on=f(x,y)?fd(x,y):(seed>>8)%2;if(on)c+=`<rect x="${x}" y="${y}" width="1" height="1"/>`}
+ return `<svg viewBox="0 0 ${n} ${n}" fill="#000">${c}</svg>`}
+render();
+</script>
+</body>
+</html>
